@@ -181,3 +181,134 @@ $$\text{Cosine Similarity}(A, B) = \frac{A \cdot B}{1 \times 1} = A \cdot B$$
 
 $$\text{Cosine Similarity}(A, B) = \text{Dot Product}(A, B)$$
 
+## Частина 2 — Завантаження даних і метадані
+
+```
+$ python3 scripts/03_load_to_pinecone.py
+
+Підключення до сервісу Pinecone...
+Індекс 'arxiv-papers' вже існує. Підключаємось...
+
+Завантаження локальних файлів...
+Успішно завантажено 10000 статей та їхніх ембеддингів.
+
+Початок завантаження в Pinecone пакетами по 200 елементів...
+Upsert у Pinecone: 100%|██████████████████████████████████████████████████████████████████████████████████████████████| 50/50 [00:46<00:00,  1.08it/s]
+
+Всі дані успішно відправлено в хмару!
+Оновлення статистики індексу...
+==================================================
+ФІНАЛЬНИЙ СТАН ІНДЕКСУ 'arxiv-papers':
+Загальна кількість векторів в індексі: 10000
+==================================================
+```
+
+## Частина 3 — Пошукові запити
+
+```
+$ python3 scripts/04_search.py
+
+Крок 1-2: Ініціалізація інфраструктури...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 29919.58it/s]
+
+Крок 3: Чистий семантичний пошук для запиту: 'teaching machines to recognize objects in pictures'
+--------------------------------------------------------------------------------
+#1 [Score: 0.8288] Capturing knots in polymers
+   Категорія: cond-mat.soft | Рік: 2007
+   Анотація:  This paper visualizes a knot reduction algorithm...
+
+#2 [Score: 0.8263] Symbolic sensors : one solution to the numerical-symbolic interface
+   Категорія: physics.ins-det | Рік: 2007
+   Анотація:  This paper introduces the concept of symbolic sensor as an extension of the
+smart sensor one. Then, the links between the physical world and the symbo...
+
+#3 [Score: 0.8256] The Mathematics
+   Категорія: math.HO | Рік: 2007
+   Анотація:  This is an essay that considering the knowledge structure and language of a
+different nature, attempts to build on an explanation of the object of stu...
+
+#4 [Score: 0.8170] Modeling the field of laser welding melt pool by RBFNN
+   Категорія: physics.comp-ph | Рік: 2007
+   Анотація:  Efficient control of a laser welding process requires the reliable prediction
+of process behavior. A statistical method of field modeling, based on
+no...
+
+#5 [Score: 0.8146] Why should anyone care about computing with anyons?
+   Категорія: quant-ph | Рік: 2007
+   Анотація:  In this article we present a pedagogical introduction of the main ideas and
+recent advances in the area of topological quantum computation. We give an...
+
+
+Крок 4: Хмарний пошук із фільтрацією
+================================================================================
+Приклад A: Запит 'reinforcement learning policy optimization' | Фільтр: рік >= 2021, категорія == cs.LG
+
+Приклад B: Запит 'teaching machines to recognize objects in pictures' | Фільтр: рік <= 2015
+  #1 [2007] [cond-mat.soft] Capturing knots in polymers
+  #2 [2007] [physics.ins-det] Symbolic sensors : one solution to the numerical-symbolic interface
+  #3 [2007] [math.HO] The Mathematics
+  #4 [2007] [physics.comp-ph] Modeling the field of laser welding melt pool by RBFNN
+  #5 [2007] [quant-ph] Why should anyone care about computing with anyons?
+
+Крок 5: Локальне порівняння математичних метрик схожості
+================================================================================
+Топ-5 індексів документів (id у датасеті) для запиту:
+Ранг   | Cosine Similarity    | Dot Product          | L2 Distance         
+---------------------------------------------------------------------------
+1      | idx_378 (0.8294)     | idx_378 (0.8294)     | idx_378 (0.5842)    
+2      | idx_3350 (0.8260)    | idx_3350 (0.8260)    | idx_3350 (0.5899)   
+3      | idx_4115 (0.8254)    | idx_4115 (0.8254)    | idx_4115 (0.5910)   
+4      | idx_610 (0.8181)     | idx_610 (0.8181)     | idx_610 (0.6032)    
+5      | idx_3181 (0.8142)    | idx_3181 (0.8142)    | idx_3181 (0.6095)   
+
+Назви топових статей за версією Cosine:
+ 1. Capturing knots in polymers (2007)
+ 2. Symbolic sensors : one solution to the numerical-symbolic interface (2007)
+ 3. The Mathematics (2007)
+ 4. Modeling the field of laser welding melt pool by RBFNN (2007)
+ 5. Python for Education: Computational Methods for Nonlinear Systems (2007)
+
+Назви топових статей за версією Dot Product:
+ 1. Capturing knots in polymers (2007)
+ 2. Symbolic sensors : one solution to the numerical-symbolic interface (2007)
+ 3. The Mathematics (2007)
+ 4. Modeling the field of laser welding melt pool by RBFNN (2007)
+ 5. Python for Education: Computational Methods for Nonlinear Systems (2007)
+
+Назви топових статей за версією L2 Distance:
+ 1. Capturing knots in polymers (2007)
+ 2. Symbolic sensors : one solution to the numerical-symbolic interface (2007)
+ 3. The Mathematics (2007)
+ 4. Modeling the field of laser welding melt pool by RBFNN (2007)
+ 5. Python for Education: Computational Methods for Nonlinear Systems (2007)
+```
+
+### Пошук з фільтрацією
+
+Приклад A (рік >= 2021 і категорія == cs.LG): Повернув порожній результат.
+
+Приклад B (рік <= 2015): Відпрацював успішно і повернув ті самі статті 2007 року, оскільки вони повністю підпадають під фільтр.
+
+У нашому Parquet-файлі, який обмежений початком датасету arXiv, фізично немає жодної статті, яка була б опублікована після 2021 року та мала категорію cs.LG.
+
+Щоб запаит дійсно почав знаходити статті про Machine Learning та Computer Science, потрібно змінити стратегію вибірки даних у 01_prepare_data.py.
+
+### Метрики схожості на локальних ембеддингах
+
+1. **Cosine Similarity та Dot Product**: Списки індексів (idx_378, idx_3350...) та скори (наприклад, 0.8294) збігаються до останнього знаку. Це доказ того, що батчева нормалізація на етапі генерації пройшла успішно. Довжина векторів дорівнює $1$, тому косинус перетворився на звичайний скалярний добуток.
+
+2. **L2 Distance**: Видає абсолютно ідентичний порядок статей. Перша стаття має найменшу L2-відстань (0.5842), що відповідає найвищому косинусному скору (0.8294). Математичний зв'язок $d_{L2} = \sqrt{2 - 2 \cdot \text{cos}(\theta)}$ підтверджено практикою.
+
+3. Що сталося б, якби ембеддинги не були нормалізовані?
+
+Довжина вектора в текстових моделях часто корелює з технічними нюансами: кількістю слів в анотації, частотою використання рідкісних токенів або специфікою розподілу уваги (attention) моделі.
+
+Якщо ми шукаємо статті через Dot Product без нормалізації, база даних буде постійно піднімати в топ ті статті, які мають просто довші вектори (довші тексти або більше специфічних термінів), навіть якщо за змістом вони менш релевантні. Довжина вектора почне "перебивати" його напрямок.
+
+Для allenai/specter2_base довжина вектора є "сміттєвою" метрикою, а вся корисна інформація закладена виключно в напрямку вектора.
+
+## Частина 4 — Chunking
+
+
+

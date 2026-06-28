@@ -1,4 +1,4 @@
-# scripts/02_generate_embeddings.py
+# scripts/02_embed.py
 import os
 import numpy as np
 import pandas as pd
