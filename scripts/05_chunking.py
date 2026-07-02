@@ -140,7 +140,7 @@ def process_and_upsert(df_papers, chunk_strategy, pinecone_index, strategy_name)
     embeddings = model.encode(model_inputs, batch_size=64, show_progress_bar=True, normalize_embeddings=True)
     
     # Крок 5: Завантаження батчами
-    print(f"Завантаження в індекс {pinecone_index.name} батчами по {BATCH_SIZE}...")
+    print(f"Завантаження в індекс {strategy_name} батчами по {BATCH_SIZE}...")
     for i in tqdm(range(0, len(all_chunks_data), BATCH_SIZE), desc=f"Upsert {strategy_name}"):
         batch_vectors = []
         end_idx = min(i + BATCH_SIZE, len(all_chunks_data))
@@ -169,7 +169,7 @@ process_and_upsert(top_30_longest, fixed_size_chunking, idx_fixed_client, "Fixed
 process_and_upsert(top_30_longest, semantic_chunking, idx_semantic_client, "Semantic")
 
 # Даємо індексам оновитися в хмарі
-time.sleep(3)
+time.sleep(30)
 
 # =====================================================================
 # Крок 6: Функція семантичного пошуку по чанках
@@ -184,7 +184,7 @@ def search_chunks(query_text: str):
     
     for name, client in [("FIXED-SIZE CHUNKS", idx_fixed_client), ("SEMANTIC CHUNKS", idx_semantic_client)]:
         print(f"\n--- Стратегія: {name} ---")
-        res = client.query(vector=query_vector, top_k=3, include_metadata=True)
+        res = client.query(vector=query_vector, top_k=5, include_metadata=True)
         
         for rank, match in enumerate(res['matches'], 1):
             meta = match['metadata']
